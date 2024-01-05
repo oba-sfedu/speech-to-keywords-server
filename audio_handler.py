@@ -3,18 +3,16 @@ import io
 import os
 import ffmpeg
 import speech_recognition as sr
-import random
-import string
 import redis
+import yake
 from nanoid import generate
+from keywords import extract_keywords_yake, extract_keywords_keybert
 
 r = sr.Recognizer()
+kw_extractor = yake.KeywordExtractor()
+language = "ru"
 
 storage = redis.Redis(host='localhost', port=6379, decode_responses=True)
-
-
-def generate_random_key(length):
-    return ''.join(random.choice(string.ascii_letters) for i in range(length))
 
 
 def handle_audio_message(message):
@@ -35,13 +33,13 @@ def handle_audio_message(message):
 
     with sr.AudioFile(output_name) as source:
         audio = r.record(source)
-        recognized = r.recognize_whisper(audio, model="base", language="ru")
-        stored_key = '{sessionId}-text'.format(sessionId=message['sessionId'])
+        recognized = r.recognize_whisper(audio, model='small', language=language)
+        stored_key = 'recognized-text-{sessionId}'.format(sessionId=message['sessionId'])
 
         content = storage.get(stored_key)
         new_content = content + recognized if content else recognized
         storage.set(stored_key, new_content, ex=3600)
-        emit('recognized', recognized)
+        emit('recognized', {"recognized": recognized, "keywords": extract_keywords_keybert(new_content)})
 
     os.remove(input_name)
     os.remove(output_name)
