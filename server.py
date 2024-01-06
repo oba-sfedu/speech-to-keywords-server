@@ -5,7 +5,7 @@ from nanoid import generate
 from app.audio import save_to_file, convert_to_wav
 from app.recognition import recognize_audio_file
 from app.text_cache import get_text_cache, set_text_cache
-from app.keywords import extract_keywords_keybert
+from app.keywords import extract_keywords
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -43,7 +43,7 @@ def on_audio(message):
     new_text = text_cache + recognized if text_cache else recognized
     set_text_cache(message['sessionId'], new_text)
 
-    emit('recognized', {"recognized": recognized, "keywords": extract_keywords_keybert(new_text)})
+    emit('recognized', {"recognized": recognized, "keywords": extract_keywords(new_text)})
 
     os.remove(input_file_path)
     os.remove(wav_file_path)
